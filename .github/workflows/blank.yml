@@ -1,0 +1,30 @@
+name: NSE Daily Data Ingestion
+
+on:
+  schedule:
+    # Monday to Friday shaam 6:30 PM IST (1:00 PM UTC) par run hoga
+    - cron: '0 13 * * 1-5'
+  workflow_dispatch: # Isse manual button daba kar bhi run kar sakte hain
+
+jobs:
+  scrape-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests pandas psycopg2-binary
+
+      - name: Run NSE Ingestion Script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python scripts/nse_bhavcopy_fetcher.py
