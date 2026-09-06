@@ -8,9 +8,15 @@ import kotlinx.coroutines.flow.Flow
 
 class CompanyRepository(
     private val companyDao: CompanyDao,
+    private val watchlistDao: WatchlistDao,
     private val apiService: StockApiService
 ) {
     val allCompanies: Flow<List<Company>> = companyDao.getAllCompanies()
+    val watchlistedCompanies: Flow<List<Company>> = watchlistDao.getWatchlistedCompanies()
+
+    fun searchCompanies(query: String): Flow<List<Company>> {
+        return companyDao.searchCompanies(query)
+    }
 
     fun getCompany(isin: String): Flow<Company?> {
         return companyDao.getCompanyByIsin(isin)
@@ -22,6 +28,17 @@ class CompanyRepository(
 
     suspend fun insertAll(companies: List<Company>) {
         companyDao.insertCompanies(companies)
+    }
+
+    // Watchlist Actions
+    fun isWatchlisted(isin: String): Flow<Boolean> = watchlistDao.isWatchlisted(isin)
+
+    suspend fun toggleWatchlist(isin: String, isWatchlisted: Boolean) {
+        if (isWatchlisted) {
+            watchlistDao.removeFromWatchlist(isin)
+        } else {
+            watchlistDao.addToWatchlist(Watchlist(companyIsin = isin))
+        }
     }
 
     // Network Calls

@@ -12,9 +12,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CompanyViewModel(private val repository: CompanyRepository) : ViewModel() {
     
     // Local DB State
@@ -24,6 +27,47 @@ class CompanyViewModel(private val repository: CompanyRepository) : ViewModel() 
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    val searchResults: StateFlow<List<Company>> = _searchQuery
+        .flatMapLatest { query ->
+            if (query.isBlank()) {
+                repository.allCompanies
+            } else {
+                repository.searchCompanies(query)
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    val watchlistedCompanies: StateFlow<List<Company>> = repository.watchlistedCompanies
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    fun isWatchlisted(isin: String): StateFlow<Boolean> = repository.isWatchlisted(isin)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    fun toggleWatchlist(isin: String, currentlyWatchlisted: Boolean) {
+        viewModelScope.launch {
+            repository.toggleWatchlist(isin, currentlyWatchlisted)
+        }
+    }
 
     // Network States
     private val _stockOverviewState = MutableStateFlow<UiState<StockOverviewDto>>(UiState.Loading)

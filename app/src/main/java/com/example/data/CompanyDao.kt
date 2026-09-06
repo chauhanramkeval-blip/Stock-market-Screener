@@ -14,6 +14,9 @@ interface CompanyDao {
     @Query("SELECT * FROM companies WHERE isin = :isin")
     fun getCompanyByIsin(isin: String): Flow<Company?>
 
+    @Query("SELECT * FROM companies WHERE nse_symbol LIKE '%' || :searchQuery || '%' OR company_name LIKE '%' || :searchQuery || '%' ORDER BY nse_symbol ASC")
+    fun searchCompanies(searchQuery: String): Flow<List<Company>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCompany(company: Company)
 

@@ -5,9 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [Company::class], version = 1, exportSchema = false)
+@Database(entities = [Company::class, Watchlist::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun companyDao(): CompanyDao
+    abstract fun watchlistDao(): WatchlistDao
 
     companion object {
         @Volatile
@@ -17,8 +18,9 @@ abstract class AppDatabase : RoomDatabase() {
             return INSTANCE ?: synchronized(this) {
                 val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
                     override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                        // Schema expansion space for future metrics (e.g., daily_metrics table)
-                        // db.execSQL("ALTER TABLE companies ADD COLUMN new_column TEXT")
+                        db.execSQL(
+                            "CREATE TABLE IF NOT EXISTS `watchlist` (`company_isin` TEXT NOT NULL, `added_at` INTEGER NOT NULL, PRIMARY KEY(`company_isin`), FOREIGN KEY(`company_isin`) REFERENCES `companies`(`isin`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+                        )
                     }
                 }
 
